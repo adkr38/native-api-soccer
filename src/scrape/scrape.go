@@ -35,9 +35,9 @@ func Scrape(stat statenums.StatEnum){
     tables := doc.Find("table")
     statsTable := tables.First()
     var headers = make(map[int]*Column)
-    ths := statsTable.Find("thead").Find("tr").Find("th")
+    doubleHeader := statsTable.Find("thead").Find("tr").Last()
+    ths := doubleHeader.Find("th")
     bodyRows := statsTable.Find("tbody").Find("tr")
-
     ths.Each(func(i int, s *goquery.Selection) {
       if i==0{
         return 
@@ -67,6 +67,9 @@ func Scrape(stat statenums.StatEnum){
 
     }
 
+  fmt.Println(headers[0].ColName)
+  
+  
   var headerNames []string
   var filteredCols []Column
   var cleanColumns []Column
@@ -116,7 +119,7 @@ func Scrape(stat statenums.StatEnum){
 
       for _, h := range filteredCols{
         convertedString := ConvertPassingStatHeader(h.ColName)
-        if len(convertedString) > 0{
+        if len(convertedString) > 1{
           h.SetColName(convertedString)
           cleanColumns = append(cleanColumns,h)
       }
