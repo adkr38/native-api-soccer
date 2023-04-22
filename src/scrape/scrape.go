@@ -7,7 +7,6 @@ import (
 	"soccer-go/src/utils"
 	"strconv"
 	"strings"
-
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -49,6 +48,7 @@ func Scrape(stat statenums.StatEnum){
       headers[i-1].SetColName(strings.ToLower(s.Text()))
     })
 
+
     var allRows []interface{}
 
     bodyRows.Each(func(i int, s *goquery.Selection){
@@ -69,26 +69,34 @@ func Scrape(stat statenums.StatEnum){
 
   var headerNames []string
   var filteredCols []Column
+  var cleanColumns []Column
+
   for _, h:= range headers{
       if !(len(h.ColName)>0){
-        fmt.Println("Empty colname")
         continue
       }
       if utils.Contains(headerNames,h.ColName){
         intChar, err := strconv.Atoi(string(h.ColName[len(h.ColName)-1]))
         if err != nil{
-          repeatedString := h.ColName[:len(h.ColName)-1] + strconv.Itoa(intChar + 1)
-          fmt.Println(repeatedString)
-          convertedString := ConvertPassingStatHeader(repeatedString)
-          if !(len(convertedString) > 0 ){
-            continue
+          var repeatedString string;
+          for i:=0 ;i<10;i++{
+            repeatedString = h.ColName[:len(h.ColName)] + strconv.Itoa(intChar + i+1)
+            if utils.Contains(headerNames,repeatedString){
+              continue
+            }
+            break
           }
-          h.SetColName(convertedString)
+          h.SetColName(repeatedString)
           headerNames = append(headerNames, h.ColName)
           filteredCols = append(filteredCols,*h)
             
         } else{
-          convertedString := ConvertPassingStatHeader(h.ColName + strconv.Itoa(1))
+          numberAtEnd,err := strconv.Atoi(string(h.ColName[len(h.ColName)]))
+            if err != nil{
+                fmt.Printf("Error parsing int -> %v\n",err)
+                return //do something
+          }
+          convertedString := h.ColName[:len(h.ColName)] + strconv.Itoa(1 + numberAtEnd)
           if !(len(convertedString) > 0 ){
             continue
           }
@@ -98,26 +106,28 @@ func Scrape(stat statenums.StatEnum){
         }
 
         }else{
-        convertedString := ConvertPassingStatHeader(h.ColName)
-          if !(len(convertedString) > 0){
-            continue
-          }
-
-        h.SetColName(convertedString)
         headerNames = append(headerNames, h.ColName)
         filteredCols = append(filteredCols,*h)
-
-
       }
 
 
 
+        }
+
+      for _, h := range filteredCols{
+        convertedString := ConvertPassingStatHeader(h.ColName)
+        if len(convertedString) > 0{
+          h.SetColName(convertedString)
+          cleanColumns = append(cleanColumns,h)
+      }
+
     }
 
-      fmt.Println(filteredCols)
+    var csvErr error
 
-    
-
+    if csvErr = (&Column{}).ExportColumnsToCsv(cleanColumns,"data.csv"); csvErr != nil{
+      fmt.Println("Error exporting csv: ",csvErr)
+    }
 
 
   case err := <-errChan:
