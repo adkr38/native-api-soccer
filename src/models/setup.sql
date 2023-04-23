@@ -1,3 +1,7 @@
+DROP SCHEMA soccer;
+CREATE SCHEMA soccer;
+USE soccer;
+
 CREATE TABLE competitions (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   competition_name VARCHAR(255)
@@ -110,7 +114,7 @@ CREATE TABLE player_passing (
   short_passes_completed INT,
   medium_passes_attempted INT,
   medium_passes_completed INT,
-  long_passes_attemptedINT,
+  long_passes_attempted INT,
   long_passes_completed INT,
   key_passes INT,
   passes_into_final_third INT,
@@ -126,11 +130,11 @@ CREATE TABLE team_passing(
   short_passes_completed INT,
   medium_passes_attempted INT,
   medium_passes_completed INT,
-  long_passes_attemptedINT,
+  long_passes_attempted INT,
   long_passes_completed INT,
   key_passes INT,
   passes_into_final_third INT,
-  FOREIGN KEY team_id REFERENCES teams(id);
+  FOREIGN KEY (team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE player_defense(
@@ -146,8 +150,8 @@ CREATE TABLE player_defense(
   interceptions INT,
   clearances INT,
   errors INT,
-  FOREIGN KEY player_id REFERENCES players(id);
-)
+  FOREIGN KEY (player_id) REFERENCES players(id)
+);
 
 CREATE TABLE team_defense(
   team_id INT,
@@ -162,15 +166,15 @@ CREATE TABLE team_defense(
   interceptions INT,
   clearances INT,
   errors INT,
-  FOREIGN KEY team_id REFERENCES teams(id);
-)
+  FOREIGN KEY (team_id) REFERENCES teams(id)
+);
 
 CREATE TABLE player_possession(
   player_id INT,
   touches INT,
   touches_self_penalty INT,
   touches_d3 INT,
-  touches m3 INT,
+  touches_m3 INT,
   touches_a3 INT,
   touches_opponent_penalty INT,
   dribbles INT,
@@ -179,16 +183,15 @@ CREATE TABLE player_possession(
   carries_opponent_penalty INT,
   dispossesions INT,
   miscontrols INT,
-  FOREIGN key palyer_id REFERENCES players(id);
-)
-
+  FOREIGN KEY (player_id) REFERENCES players(id)
+);
 
 CREATE TABLE team_possession(
   team_id INT,
   touches INT,
   touches_self_penalty INT,
   touches_d3 INT,
-  touches m3 INT,
+  touches_m3 INT,
   touches_a3 INT,
   touches_opponent_penalty INT,
   dribbles INT,
@@ -197,5 +200,5 @@ CREATE TABLE team_possession(
   carries_opponent_penalty INT,
   dispossesions INT,
   miscontrols INT,
-  FOREIGN key team_id REFERENCES teams(id);
-)
+  FOREIGN KEY (team_id) REFERENCES teams(id)
+);
