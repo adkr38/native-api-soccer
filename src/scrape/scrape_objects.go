@@ -4,6 +4,9 @@ import(
   "fmt"
   "encoding/csv"
   "os"
+	"soccer-go/src/statenums"
+  "database/sql"
+  "strings"
 )
 
 type Column struct{
@@ -85,6 +88,45 @@ func (c *Column) ExportColumnsToCsv(columns []Column, filename string) error{
   }
 
   writer.Flush()
+  return nil
+
+}
+
+
+func(c *Column) ToMySql(columns []Column, statType statenums.StatEnum, db *sql.DB) error{
+  var queryArgs []interface{}
+  var valueHolders []string
+  colNames := make([]string,0,len(columns))
+  for _,c := range columns{
+    colNames = append(colNames, c.ColName)
+  }
+
+  for i:= 0; i<len(columns); i++{
+    valueHolders = append(valueHolders, "?")
+  }
+  var placeHolderStr string = strings.Join(valueHolders,",")
+
+  var query string = fmt.Sprintf(`
+    INSERT INTO %s (%s)
+    VALUES (%s)
+
+    `, statenums.GetEnumName(statType), strings.Join(colNames,","), placeHolderStr)
+
+  statement, err := db.Prepare(query)
+  if err != nil{
+      fmt.Printf("Error -> %v\n",err)
+      return err
+  }
+  defer statement.Close()
+  for _,col := range columns{
+    queryArgs = append(queryArgs, col.Values...)
+  }
+
+  _, err = statement.Exec(queryArgs...)
+  if err != nil{
+      fmt.Printf("Error -> %v\n",err)
+      return err //do something
+  }
   return nil
 
 }
