@@ -1,16 +1,20 @@
 package scrape
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"soccer-go/src/statenums"
 	"soccer-go/src/utils"
+	"sort"
 	"strconv"
 	"strings"
+
 	"github.com/PuerkitoBio/goquery"
+	"github.com/go-sql-driver/mysql"
 )
 
-func Scrape(stat statenums.StatEnum){
+func Scrape(stat statenums.StatEnum, f func(string) string){
   url := string(stat)
   respChan, errChan := make(chan *http.Response), make(chan error)
   go func(){
@@ -49,6 +53,7 @@ func Scrape(stat statenums.StatEnum){
     })
 
 
+
     var allRows []interface{}
 
     bodyRows.Each(func(i int, s *goquery.Selection){
@@ -67,50 +72,54 @@ func Scrape(stat statenums.StatEnum){
 
     }
 
-  fmt.Println(headers[0].ColName)
-  
   
   var headerNames []string
   var filteredCols []Column
   var cleanColumns []Column
+  keys := make([]int,0,len(headers))
+  for k:= range headers{
+      keys = append(keys, k)
+    }
 
-  for _, h:= range headers{
-      if !(len(h.ColName)>0){
+  sort.Ints(keys)
+
+  for _, k:= range keys{
+      if !(len(headers[k].ColName)>0){
         continue
       }
-      if utils.Contains(headerNames,h.ColName){
-        intChar, err := strconv.Atoi(string(h.ColName[len(h.ColName)-1]))
+      if utils.Contains(headerNames,headers[k].ColName){
+        intChar, err := strconv.Atoi(string(headers[k].ColName[len(headers[k].ColName)-1]))
         if err != nil{
           var repeatedString string;
           for i:=0 ;i<10;i++{
-            repeatedString = h.ColName[:len(h.ColName)] + strconv.Itoa(intChar + i+1)
+            repeatedString = headers[k].ColName[:len(headers[k].ColName)] + strconv.Itoa(intChar + i+1)
             if utils.Contains(headerNames,repeatedString){
               continue
             }
             break
           }
-          h.SetColName(repeatedString)
-          headerNames = append(headerNames, h.ColName)
-          filteredCols = append(filteredCols,*h)
+          headers[k].SetColName(repeatedString)
+          headerNames = append(headerNames, headers[k].ColName)
+          filteredCols = append(filteredCols,*headers[k])
             
         } else{
-          numberAtEnd,err := strconv.Atoi(string(h.ColName[len(h.ColName)]))
+          numberAtEnd,err := strconv.Atoi(string(headers[k].ColName[len(headers[k].ColName)]))
             if err != nil{
                 fmt.Printf("Error parsing int -> %v\n",err)
                 return //do something
           }
-          convertedString := h.ColName[:len(h.ColName)] + strconv.Itoa(1 + numberAtEnd)
+          convertedString := headers[k].ColName[:len(headers[k].ColName)] + strconv.Itoa(1 + numberAtEnd)
           if !(len(convertedString) > 0 ){
             continue
           }
-          h.SetColName(convertedString)
-          headerNames = append(headerNames, h.ColName)
-          filteredCols = append(filteredCols,*h)
+          headers[k].SetColName(convertedString)
+          headerNames = append(headerNames, headers[k].ColName)
+          filteredCols = append(filteredCols,*headers[k])
         }
 
         }else{
-        headerNames = append(headerNames, h.ColName)
-        filteredCols = append(filteredCols,*h)
+        headerNames = append(headerNames, headers[k].ColName)
+        filteredCols = append(filteredCols,*headers[k])
       }
 
 
@@ -118,7 +127,7 @@ func Scrape(stat statenums.StatEnum){
         }
 
       for _, h := range filteredCols{
-        convertedString := ConvertPassingStatHeader(h.ColName)
+        convertedString := f(h.ColName)
         if len(convertedString) > 1{
           h.SetColName(convertedString)
           cleanColumns = append(cleanColumns,h)
@@ -126,12 +135,27 @@ func Scrape(stat statenums.StatEnum){
 
     }
 
-    var csvErr error
 
-    if csvErr = (&Column{}).ExportColumnsToCsv(cleanColumns,"data.csv"); csvErr != nil{
-      fmt.Println("Error exporting csv: ",csvErr)
+    mySqlConfig := mysql.Config{
+        User:   "root",
+        Passwd: "",
+        Net:    "tcp",
+        Addr:   "localhost",
+        DBName: "SOCCER",
     }
 
+    dsn := mySqlConfig.FormatDSN()
+    db,err := sql.Open("mysql",dsn)
+    if err != nil{
+        fmt.Printf("Error formatting DSN-> %v\n",err)
+  }
+
+    var mySqlError error = (&Column{}).ToMySql(cleanColumns,stat,db)
+    if mySqlError != nil{
+        fmt.Printf("Error adding data -> %v\n",err)
+        return //do something
+  }
+    
 
   case err := <-errChan:
     fmt.Println("Error:",err)
