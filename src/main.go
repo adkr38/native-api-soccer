@@ -7,7 +7,10 @@ import (
 )
 
 func main()  {
-  utils.TimeFunc(scrape.Scrape,statenums.PASSING_PLAYER)
+    utils.TimeFunc(scrape.Scrape,statenums.TEAMS,scrape.ConvertTeamHeader)
+    utils.TimeFunc(scrape.Scrape,statenums.PLAYERS,scrape.ConvertPlayerHeader)
+    utils.TimeFunc(scrape.Scrape,statenums.TEAM_OVERALL,scrape.ConvertTeamOverallStatHeader)
+    utils.TimeFunc(scrape.Scrape,statenums.PLAYER_OVERALL,scrape.ConvertPlayerOverallStatHeader)
 }
 
 

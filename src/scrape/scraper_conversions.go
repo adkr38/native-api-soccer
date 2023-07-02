@@ -1,7 +1,46 @@
 package scrape
 
-var overallConversions= map[string]string{
+var teamConversions = map[string]string{
+  "squad":"team_name",
+  "comp":"country",
+}
+
+func ConvertTeamHeader(str string) string{
+  return teamConversions[str]
+}
+
+
+var playerConversions= map[string]string{
   "player":"name",
+  "squad":"team_name",
+}
+
+
+func ConvertPlayerHeader(str string) string{
+  return playerConversions[str]
+}
+
+var teamOverallConversions= map[string]string{
+  "squad":"team_name",
+  "nation":"nation",
+  "pos":"position",
+  "age":"age",
+  "born":"birth_year",
+  "mp":"matches_played",
+  "min":"minutes_played",
+  "gls":"goals",
+  "ast":"assists",
+  "g-pk":"non_penalty_goals",
+  "pk":"penalty_goals",
+  "pkatt":"penalty_attempts",
+  "crdy":"yellow_cards",
+  "crdr":"red_cards",
+}
+
+var playerOverallConversions= map[string]string{
+  "player":"player_name",
+  "squad":"team_name",
+  "comp":"competition",
   "nation":"nation",
   "pos":"position",
   "age":"age",
@@ -18,8 +57,12 @@ var overallConversions= map[string]string{
 }
 
 
-func ConvertOverallStatHeader(str string) string{
-  return overallConversions[str]
+func ConvertPlayerOverallStatHeader(str string) string{
+  return playerOverallConversions[str]
+}
+
+func ConvertTeamOverallStatHeader(str string) string{
+  return teamOverallConversions[str]
 }
 
 var goalkeepingConversions= map[string]string{

@@ -1,12 +1,13 @@
-package scrape;
+package scrape
 
-import(
-  "fmt"
-  "encoding/csv"
-  "os"
+import (
+	"database/sql"
+	"encoding/csv"
+	"fmt"
+	"os"
+	"regexp"
 	"soccer-go/src/statenums"
-  "database/sql"
-  "strings"
+	"strings"
 )
 
 type Column struct{
@@ -28,9 +29,9 @@ func (c *Column) AddValue(v interface{}){
     c.Values = append(c.Values,val)
   default:
     fmt.Printf("Unsupported value type %T",val)
-    
+
   }
-  
+
 }
 
 func (c *Column) GetValues()[]interface{}{
@@ -56,11 +57,10 @@ func (c *Column) ExportColumnsToCsv(columns []Column, filename string) error{
   for i, col:= range columns{
     header[i] = col.ColName
   }
-  fmt.Println(header)
   err = writer.Write(header)
   if err != nil{
       fmt.Printf("Error writing header -> %v\n",err)
-      return err 
+      return err
   }
 
   var maxRows int = 0;
@@ -75,7 +75,7 @@ func (c *Column) ExportColumnsToCsv(columns []Column, filename string) error{
     row := make([]string, len(columns))
     for j,col := range columns{
       if i >= len(col.Values){
-         row[j] = "NA"
+         row[j] = ""
       }else{
         row[j] = col.Values[i].(string)
     }
@@ -108,8 +108,7 @@ func(c *Column) ToMySql(columns []Column, statType statenums.StatEnum, db *sql.D
 
   var query string = fmt.Sprintf(`
     INSERT INTO %s (%s)
-    VALUES (%s)
-
+    VALUES (%s);
     `, statenums.GetEnumName(statType), strings.Join(colNames,","), placeHolderStr)
 
   statement, err := db.Prepare(query)
@@ -118,15 +117,30 @@ func(c *Column) ToMySql(columns []Column, statType statenums.StatEnum, db *sql.D
       return err
   }
   defer statement.Close()
-  for _,col := range columns{
-    queryArgs = append(queryArgs, col.Values...)
-  }
 
-  _, err = statement.Exec(queryArgs...)
-  if err != nil{
-      fmt.Printf("Error -> %v\n",err)
-      return err //do something
-  }
+   for i := 0; i < len(columns[0].Values); i++ {
+        queryArgs = nil // Reset queryArgs for each row
+
+        for _, col := range columns {
+            if i >= len(col.Values) {
+                queryArgs = append(queryArgs, nil) // Add null value for missing values
+            } else {
+                queryArgs = append(queryArgs, strings.Trim(col.Values[i].(string)," \t\n"))
+            }
+        }
+
+        fmt.Println(query)
+        fmt.Println(queryArgs...)
+        _, err = statement.Exec(queryArgs...)
+        if err != nil {
+            match,err :=  regexp.MatchString("1062",err.Error())
+            if match{
+                continue
+            }
+            fmt.Printf("Error adding value -> %v\n", err)
+            return err
+        }
+    }
   return nil
 
 }
