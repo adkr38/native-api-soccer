@@ -75,7 +75,7 @@ func (c *Column) ExportColumnsToCsv(columns []Column, filename string) error{
     row := make([]string, len(columns))
     for j,col := range columns{
       if i >= len(col.Values){
-         row[j] = ""
+         row[j] = "NULL"
       }else{
         row[j] = col.Values[i].(string)
     }
@@ -123,21 +123,27 @@ func(c *Column) ToMySql(columns []Column, statType statenums.StatEnum, db *sql.D
 
         for _, col := range columns {
             if i >= len(col.Values) {
-                queryArgs = append(queryArgs, nil) // Add null value for missing values
+                // queryArgs = append(queryArgs, nil) // Add null value for missing values
+                queryArgs = append(queryArgs, nil) // Add null value for missing or empty values
             } else {
+                if len(col.Values[i].(string)) == 0{
+                    queryArgs = append(queryArgs, nil) // Add null value for missing or empty values
+                    continue
+                }
                 queryArgs = append(queryArgs, strings.Trim(col.Values[i].(string)," \t\n"))
             }
         }
 
         fmt.Println(query)
         fmt.Println(queryArgs...)
+
         _, err = statement.Exec(queryArgs...)
         if err != nil {
-            match,err :=  regexp.MatchString("1062",err.Error())
+            match,_:=  regexp.MatchString("1062",err.Error())
             if match{
                 continue
             }
-            fmt.Printf("Error adding value -> %v\n", err)
+            fmt.Printf("Error adding value -> %v\n", err.Error() )
             return err
         }
     }
