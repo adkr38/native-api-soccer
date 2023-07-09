@@ -16,7 +16,6 @@ mysql> SELECT <br>
     ORDER BY 4 DESC <br>
     LIMIT 10; <br>
 
-> <br>
 
 
 | Name             | Age | Position | Dribbling Success Rate |
