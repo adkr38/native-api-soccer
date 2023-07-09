@@ -4,18 +4,22 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
 	"soccer-go/src/statenums"
 	"soccer-go/src/utils"
 	"sort"
 	"strconv"
 	"strings"
+    "time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
-  // TEAMS StatEnum =  "TEAMS"
-  // COMPETITION_PARTICIPATION StatEnum =  "COMPETITION_PARTICIPATIONç"
-  // PLAYERS StatEnum = "PLAYERS"
+// TEAMS StatEnum =  "TEAMS"
+// COMPETITION_PARTICIPATION StatEnum =  "COMPETITION_PARTICIPATIONç"
+// PLAYERS StatEnum = "PLAYERS"
 
 func Scrape(stat statenums.StatEnum, f func(string) string){
 
@@ -151,9 +155,7 @@ func Scrape(stat statenums.StatEnum, f func(string) string){
         }
 
       for _, h := range filteredCols{
-        // fmt.Println("Converting string ",h.ColName)
         convertedString := f(h.ColName)
-        // fmt.Println("\n",convertedString,h.ColName)
         if len(convertedString) > 1{
           h.SetColName(convertedString)
           cleanColumns = append(cleanColumns,h)
@@ -161,16 +163,18 @@ func Scrape(stat statenums.StatEnum, f func(string) string){
 
     }
 
+	err = godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
 
-    // for _,col := range cleanColumns{
-    //     fmt.Println(col.ColName)
-    // }
+
     mySqlConfig := mysql.Config{
-        User:   "root",
-        Passwd: "",
-        Net:    "tcp",
-        Addr:   "localhost",
-        DBName: "SOCCER",
+        User:  os.Getenv("MYSQL_USER"),
+        Passwd: os.Getenv("MYSQL_PASSWORD"),
+        Net:   "tcp",
+        Addr:  os.Getenv("MYSQL_HOST") + ":" + os.Getenv("MYSQL_PORT") ,
+        DBName:os.Getenv("MYSQL_DBNAME"),
     }
 
     dsn := mySqlConfig.FormatDSN()
@@ -202,14 +206,179 @@ func Scrape(stat statenums.StatEnum, f func(string) string){
     var mySqlError error = (&Column{}).ToMySql(acceptedCols,stat,db)
     if mySqlError != nil{
         fmt.Printf("Error adding data -> %v\n",mySqlError)
-        return //do something
+        return
   }
+
 
 
   case err := <-errChan:
     fmt.Println("Error received on channel:",err)
 
     }
+
+}
+
+func PostScrapingMySqlSetup(){
+    err :=  godotenv.Load()
+    if err != nil{
+        fmt.Println("Unable to read .env file!")
+    }
+
+    mySqlConfig := mysql.Config{
+        User:  os.Getenv("MYSQL_USER"),
+        Passwd: os.Getenv("MYSQL_PASSWORD"),
+        Net:   "tcp",
+        Addr:  os.Getenv("MYSQL_HOST") + ":" + os.Getenv("MYSQL_PORT") ,
+        DBName:os.Getenv("MYSQL_DBNAME"),
+        MultiStatements: true,
+    }
+
+
+    dsn := mySqlConfig.FormatDSN()
+    db,err := sql.Open("mysql",dsn)
+    if err != nil{
+        fmt.Printf("Error formatting DSN-> %v\n",err)
+  }
+
+  defer db.Close()
+  _, err = db.Exec(`
+  UPDATE players p
+  JOIN teams t ON p.team_name = t.team_name
+  SET p.team_id = t.id;
+
+  UPDATE player_overall ps
+  JOIN players p ON ps.player_name = p.name AND ps.team_name = p.team_name
+  SET ps.id = p.id,
+  ps.team_id = p.team_id;
+
+  UPDATE player_defensive ps
+  JOIN players p ON ps.player_name = p.name AND ps.team_name = p.team_name
+  SET ps.id = p.id,
+  ps.team_id = p.team_id;
+
+  UPDATE player_shooting ps
+  JOIN players p ON ps.player_name = p.name AND ps.team_name = p.team_name
+  SET ps.id = p.id,
+  ps.team_id = p.team_id;
+
+  UPDATE player_passing ps
+  JOIN players p ON ps.player_name = p.name AND ps.team_name = p.team_name
+  SET ps.id = p.id,
+  ps.team_id = p.team_id;
+
+  UPDATE player_possession ps
+  JOIN players p ON ps.player_name = p.name AND ps.team_name = p.team_name
+  SET ps.id = p.id,
+  ps.team_id = p.team_id;
+
+  ALTER TABLE player_overall
+  DROP COLUMN team_name,
+  DROP COLUMN player_name;
+
+  ALTER TABLE player_defensive
+  DROP COLUMN team_name,
+  DROP COLUMN player_name;
+
+  ALTER TABLE player_shooting
+  DROP COLUMN team_name,
+  DROP COLUMN player_name;
+
+  ALTER TABLE player_passing
+  DROP COLUMN team_name,
+  DROP COLUMN player_name;
+
+  ALTER TABLE player_possession
+  DROP COLUMN team_name,
+  DROP COLUMN player_name;
+
+  ALTER TABLE players
+  DROP COLUMN team_name;
+
+  UPDATE team_overall tt
+  JOIN teams t ON tt.team_name = t.team_name
+  SET tt.id = t.id,
+  tt.id = t.id;
+
+  UPDATE team_defensive tt
+  JOIN teams t ON tt.team_name = t.team_name
+  SET tt.id = t.id,
+  tt.id = t.id;
+
+  UPDATE team_shooting tt
+  JOIN teams t ON tt.team_name = t.team_name
+  SET tt.id = t.id,
+  tt.id = t.id;
+
+  UPDATE team_possession tt
+  JOIN teams t ON tt.team_name = t.team_name
+  SET tt.id = t.id,
+  tt.id = t.id;
+
+
+  UPDATE team_passing tt
+  JOIN teams t ON tt.team_name = t.team_name
+  SET tt.id = t.id,
+  tt.id = t.id;
+
+
+  ALTER TABLE team_overall
+  DROP COLUMN team_name;
+
+  ALTER TABLE team_defensive
+  DROP COLUMN team_name;
+
+  ALTER TABLE team_shooting
+  DROP COLUMN team_name;
+
+  ALTER TABLE team_passing
+  DROP COLUMN team_name;
+
+  ALTER TABLE team_possession
+  DROP COLUMN team_name;
+  `)
+  if err != nil{
+      fmt.Println(err)
+  }
+
+}
+
+func ScrapeMain(){
+
+    utils.TimeFunc(Scrape,statenums.TEAMS,ConvertTeamHeader)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.PLAYERS,ConvertPlayerHeader)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.PLAYER_OVERALL,ConvertPlayerOverallStatHeader)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.PLAYER_PASSING,ConvertPassingStatHeaderPlayer)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.PLAYER_SHOOTING,ConvertShootingStatHeaderPlayer)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.PLAYER_POSSESSION,ConvertPossesionHeaderPlayer)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.PLAYER_DEFENSIVE,ConvertDefensiveStatHeaderPlayer)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.TEAM_OVERALL,ConvertTeamOverallStatHeader)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.TEAM_PASSING,ConvertPassingStatHeaderTeam)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.TEAM_SHOOTING,ConvertShootingStatHeaderTeam)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.TEAM_POSSESSION,ConvertPossesionHeaderTeam)
+    time.Sleep(5*time.Second)
+
+    utils.TimeFunc(Scrape,statenums.TEAM_DEFENSIVE,ConvertDefensiveStatHeaderTeam)
+    time.Sleep(5*time.Second)
 
 }
 

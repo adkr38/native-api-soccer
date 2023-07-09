@@ -3,34 +3,39 @@ CREATE SCHEMA soccer;
 USE soccer;
 
 CREATE TABLE competitions (
-  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   competition_name VARCHAR(255)
 );
 
 CREATE TABLE teams (
-  team_name VARCHAR(255) PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  team_name VARCHAR(255),
   country VARCHAR(255)
 );
 
 CREATE TABLE competition_participation (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   competition_id INT(11),
-  team_name VARCHAR(255),
+  team_id INT NULL,
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 
-  FOREIGN KEY (competition_id) REFERENCES competitions (id),
-  FOREIGN KEY (team_name) REFERENCES teams (team_name)
+
 );
 
 CREATE TABLE players (
-  name VARCHAR(255) PRIMARY KEY,
-  team_name VARCHAR(255)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255),
+  team_id INT NULL,
+  team_name VARCHAR(255),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 
 CREATE TABLE player_overall(
+  id INT NULL,
+  player_name VARCHAR(255) NULL,
   team_name VARCHAR(255) NULL,
-player_name VARCHAR(255) NULL,
-  competition VARCHAR(255) NULL,
+  team_id INT NULL,
   nation VARCHAR(255) NULL,
   position VARCHAR(255) NULL,
   age INT NULL,
@@ -44,11 +49,12 @@ player_name VARCHAR(255) NULL,
   penalty_attempts INT NULL,
   yellow_cards INT NULL,
   red_cards INT NULL,
-  FOREIGN KEY (player_name) REFERENCES players(name),
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE team_overall(
+  id INT NULL,
   team_name VARCHAR(255) NULL,
   goals INT NULL,
   assists INT NULL,
@@ -57,61 +63,69 @@ CREATE TABLE team_overall(
   penalty_attempts INT NULL,
   yellow_cards INT NULL,
   red_cards INT NULL,
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES teams(id)
 );
 
 CREATE TABLE player_goalkeeping(
+  id INT NULL,
   player_name VARCHAR(255) NULL,
+  team_id INT NULL,
   team_name VARCHAR(255) NULL,
   goals_against INT NULL,
   saves INT NULL,
-  save_percentage DECIMAL(52) NULL,
+  save_percentage DECIMAL(16,2) NULL,
   clean_sheets INT NULL,
-  clean_sheet_percentage DECIMAL(52) NULL,
+  clean_sheet_percentage DECIMAL(16,2) NULL,
   penalty_kicks_received INT NULL,
   penalty_kicks_lost INT NULL,
   penalty_kicks_saved INT NULL,
-  FOREIGN KEY (player_name) REFERENCES players(name),
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE team_goalkeeping(
+  id INT NULL,
   team_name VARCHAR(255) NULL,
   goals_against INT NULL,
   saves INT NULL,
-  save_percentage DECIMAL(52) NULL,
+  save_percentage DECIMAL(16,2) NULL,
   clean_sheets INT NULL,
-  clean_sheet_percentage DECIMAL(52) NULL,
+  clean_sheet_percentage DECIMAL(16,2) NULL,
   penalty_kicks_received INT NULL,
   penalty_kicks_lost INT NULL,
   penalty_kicks_saved INT NULL,
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES teams(id)
 );
 
 CREATE TABLE player_shooting(
+  id INT NULL,
   player_name VARCHAR(255) NULL,
+  team_id INT NULL,
   team_name VARCHAR(255) NULL,
   shots INT NULL,
   shots_on_target INT NULL,
-  goals_per_shot DECIMAL(52) NULL,
-  goals_per_shot_on_target DECIMAL(52) NULL,
+  goals_per_shot DECIMAL(16,2) NULL,
+  goals_per_shot_on_target DECIMAL(16,2) NULL,
   average_shot_distance DECIMAL(16,2)  NULL,
-  FOREIGN KEY (player_name) REFERENCES players(name),
-  FOREIGN KEY (team_name) REFERENCES teams (team_name)
+  FOREIGN KEY(id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE team_shooting(
+  id INT NULL,
   team_name VARCHAR(255) NULL,
   shots INT NULL,
   shots_on_target INT NULL,
-  goals_per_shot DECIMAL(52) NULL,
-  goals_per_shot_on_target DECIMAL(52) NULL,
+  goals_per_shot DECIMAL(16,2) NULL,
+  goals_per_shot_on_target DECIMAL(16,2) NULL,
   average_shot_distance DECIMAL(16,2)  NULL,
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES teams(id)
 );
 
 CREATE TABLE player_passing (
+  id INT NULL,
   player_name VARCHAR(255) NULL,
+  team_id INT NULL,
   team_name VARCHAR(255) NULL,
   total_completed_passes INT NULL,
   total_attempted_passes INT NULL,
@@ -124,11 +138,12 @@ CREATE TABLE player_passing (
   long_passes_completed INT NULL,
   key_passes INT NULL,
   passes_into_final_third INT NULL,
-  FOREIGN KEY (player_name) REFERENCES players(name),
-  FOREIGN KEY (team_name) REFERENCES teams (team_name)
+  FOREIGN KEY(id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE team_passing(
+  id INT NULL,
   team_name VARCHAR(255) NULL,
   total_completed_passes INT NULL,
   total_attempted_passes INT NULL,
@@ -141,11 +156,13 @@ CREATE TABLE team_passing(
   long_passes_completed INT NULL,
   key_passes INT NULL,
   passes_into_final_third INT NULL,
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES teams(id)
 );
 
 CREATE TABLE player_defensive(
+  id INT NULL,
   player_name VARCHAR(255) NULL,
+  team_id INT NULL,
   team_name VARCHAR(255) NULL,
   tackles INT NULL,
   tackles_won INT NULL,
@@ -158,11 +175,12 @@ CREATE TABLE player_defensive(
   interceptions INT NULL,
   clearances INT NULL,
   errors INT NULL,
-  FOREIGN KEY (player_name) REFERENCES players(name),
-  FOREIGN KEY (team_name) REFERENCES teams (team_name)
+  FOREIGN KEY(id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE team_defensive(
+  id INT NULL,
   team_name VARCHAR(255) NULL,
   tackles INT NULL,
   tackles_won INT NULL,
@@ -175,11 +193,13 @@ CREATE TABLE team_defensive(
   interceptions INT NULL,
   clearances INT NULL,
   errors INT NULL,
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES teams(id)
 );
 
 CREATE TABLE player_possession(
+  id INT NULL,
   player_name VARCHAR(255) NULL,
+  team_id INT NULL,
   team_name VARCHAR(255) NULL,
   touches INT NULL,
   touches_self_penalty INT NULL,
@@ -193,11 +213,12 @@ CREATE TABLE player_possession(
   carries_opponent_penalty INT NULL,
   dispossesions INT NULL,
   miscontrols INT NULL,
-  FOREIGN KEY (player_name) REFERENCES players(name),
-  FOREIGN KEY (team_name) REFERENCES teams (team_name)
+  FOREIGN KEY(id) REFERENCES players(id),
+  FOREIGN KEY(team_id) REFERENCES teams(id)
 );
 
 CREATE TABLE team_possession(
+  id INT NULL,
   team_name VARCHAR(255) NULL,
   touches INT NULL,
   touches_self_penalty INT NULL,
@@ -211,5 +232,5 @@ CREATE TABLE team_possession(
   carries_opponent_penalty INT NULL,
   dispossesions INT NULL,
   miscontrols INT NULL,
-  FOREIGN KEY (team_name) REFERENCES teams(team_name)
+  FOREIGN KEY(id) REFERENCES teams(id)
 );
